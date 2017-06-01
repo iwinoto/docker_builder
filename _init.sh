@@ -263,14 +263,12 @@ if [ -z "$APPLICATION_VERSION" ]; then
         export APPLICATION_VERSION=$SELECTED_BUILD
     fi 
 fi 
-debugme echo "installing bc"
-sudo apt-get install bc >/dev/null 2>&1
-debugme echo "done installing bc"
+
 if [ -n "$BUILD_OFFSET" ]; then 
     log_and_echo "$INFO" "Using BUILD_OFFSET of $BUILD_OFFSET"
-    export APPLICATION_VERSION=$(echo "$APPLICATION_VERSION + $BUILD_OFFSET" | bc)
-    export BUILD_NUMBER=$(echo "$BUILD_NUMBER + $BUILD_OFFSET" | bc)
-fi 
+    export APPLICATION_VERSION=$((APPLICATION_VERSION + BUILD_OFFSET))
+    export BUILD_NUMBER=$((BUILD_NUMBER + BUILD_OFFSET))
+fi
 
 log_and_echo "$INFO" "APPLICATION_VERSION: $APPLICATION_VERSION"
 
