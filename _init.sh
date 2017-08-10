@@ -327,23 +327,40 @@ export LOG_DIR=$ARCHIVE_DIR
 #############################
 # Install Cloud Foundry CLI #
 #############################
-CF_VER=$(cf -v)
-log_and_echo "$INFO" "Existing Cloud Foundry CLI ${CF_VER}"
-log_and_echo "$INFO" "Installing Cloud Foundry CLI"
-pushd $EXT_DIR >/dev/null
-gunzip cf-linux-amd64.tgz &> /dev/null
-tar -xvf cf-linux-amd64.tar  &> /dev/null
-cf help &> /dev/null
+#CF_VER=$(cf -v)
+#log_and_echo "$INFO" "Existing Cloud Foundry CLI ${CF_VER}"
+#log_and_echo "$INFO" "Installing Cloud Foundry CLI"
+#pushd $EXT_DIR >/dev/null
+#gunzip cf-linux-amd64.tgz &> /dev/null
+#tar -xvf cf-linux-amd64.tar  &> /dev/null
+#cf help &> /dev/null
+#RESULT=$?
+#if [ $RESULT -ne 0 ]; then
+#    log_and_echo "$ERROR" "Could not install the Cloud Foundry CLI"
+#    ${EXT_DIR}/print_help.sh
+#    ${EXT_DIR}/utilities/sendMessage.sh -l bad -m "Failed to install Cloud Foundry CLI. $(get_error_info)"
+#    exit $RESULT
+#fi
+#CF_VER=$(cf -v)
+#popd >/dev/null
+#log_and_echo "$LABEL" "Successfully installed Cloud Foundry CLI ${CF_VER}"
+
+#####################################
+# Install bx cli                    #
+#####################################
+echo ${EXT_DIR}
+ls ${EXT_DIR}
+
+log_and_echo "$INFO" "Installing Bluemix CLI"
+sh <(curl -fsSL https://clis.ng.bluemix.net/install/linux)
 RESULT=$?
 if [ $RESULT -ne 0 ]; then
-    log_and_echo "$ERROR" "Could not install the Cloud Foundry CLI"
-    ${EXT_DIR}/print_help.sh
-    ${EXT_DIR}/utilities/sendMessage.sh -l bad -m "Failed to install Cloud Foundry CLI. $(get_error_info)"
-    exit $RESULT
+    log_and_echo "$ERROR" "Failed to install Bluemix CLI"
+else
+    log_and_echo "$LABEL" "Successfully installed Bluemix CLI"
 fi
-CF_VER=$(cf -v)
-popd >/dev/null
-log_and_echo "$LABEL" "Successfully installed Cloud Foundry CLI ${CF_VER}"
+
+which bx
 
 #####################################
 # Install IBM Container Service CLI #
@@ -354,10 +371,11 @@ ice help &> /dev/null
 RESULT=$?
 if [ $RESULT -ne 0 ]; then
 #    installwithpython3
-    installwithpython27
+#    installwithpython27
 #    installwithpython277
 #    installwithpython34
-    ice help &> /dev/null
+#    ice help &> /dev/null
+    bx plugin install container-service -r Bluemix
     RESULT=$?
     if [ $RESULT -ne 0 ]; then
         log_and_echo "$ERROR" "Failed to install IBM Container Service CLI"
