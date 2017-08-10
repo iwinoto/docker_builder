@@ -353,15 +353,6 @@ export CCS_API_HOST="${API_PREFIX}${CF_TARGET}"
 # build registry server hostname
 export CCS_REGISTRY_HOST="${REG_PREFIX}${CF_TARGET}"
 
-################################
-# Login to Container Service   #
-################################
-${BX_CMD} cr login
-RESULT=$?
-if [ $RESULT -ne 0 ] && [ "$USE_ICE_CLI" = "1" ]; then
-    exit $RESULT
-fi
-
 ${BX_CMD} ic init 
 RESULT=$?
 if [ $RESULT -ne 0 ] && [ "$USE_ICE_CLI" = "1" ]; then
@@ -413,5 +404,14 @@ log_and_echo "$LABEL" "Initialization complete"
 export DOCKER_HOST=tcp://containers-api.ng.bluemix.net:8443
 export DOCKER_CERT_PATH=${HOME}/.ice/certs/containers-api.ng.bluemix.net/${CF_SPACE_ID}
 export DOCKER_TLS_VERIFY=1
+
+################################
+# Login to Container Registry   #
+################################
+${BX_CMD} cr login
+RESULT=$?
+if [ $RESULT -ne 0 ] && [ "$USE_ICE_CLI" = "1" ]; then
+    exit $RESULT
+fi
 
 docker info
