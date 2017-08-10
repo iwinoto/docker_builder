@@ -139,7 +139,6 @@ fi
 
 set +e
 set +x 
-env
 
 ###############################
 # Configure extension PATH    #
@@ -326,6 +325,34 @@ fi
 export LOG_DIR=$ARCHIVE_DIR
 
 #####################################
+# Install DOCKER                    #
+#####################################
+
+which docker
+RESULT=$?
+if [ $RESULT -ne 0 ]; then
+    sudo apt-get -y install apt-transport-https ca-certificates &> $EXT_DIR/dockerinst.out
+    sudo apt-key adv --keyserver hkp://p80.pool.sks-keyservers.net:80 --recv-keys 58118E89F3A912897C070ADBF76221572C52609D &>> $EXT_DIR/dockerinst.out
+    sudo add-apt-repository "deb https://apt.dockerproject.org/repo ubuntu-precise main" &>> $EXT_DIR/dockerinst.out
+    sudo apt-get update &>> $EXT_DIR/dockerinst.out
+    sudo apt-get -y install docker-engine &>> $EXT_DIR/dockerinst.out
+    local RESULT=$?
+    if [ $RESULT -ne 0 ]; then
+        log_and_echo "$ERROR" "'Installing docker.io failed with return code ${RESULT}"
+        debugme cat $EXT_DIR/dockerinst.out
+        sudo apt-get -y install docker.engine &> $EXT_DIR/dockerinst.out
+        RESULT=$?
+        if [ $RESULT -ne 0 ]; then
+            log_and_echo "$ERROR" "'Installing docker.engine failed with return code ${RESULT}"
+            debugme cat $EXT_DIR/dockerinst.out
+            return 1
+        fi
+    fi
+    DOCKER_VER=$(docker -v)
+    log_and_echo "$LABEL" "Successfully installed ${DOCKER_VER}"
+fi
+
+#####################################
 # Install bx cli                    #
 #####################################
 echo ${EXT_DIR}
@@ -352,7 +379,7 @@ BX_CMD=`which bx`
 # Install IBM Container Service CLI #
 #####################################
 # Install ICE CLI
-${BX_CMD} plugin show container-registry
+${BX_CMD} plugin show container-registry > /dev/null
 RESULT=$?
 if [ $RESULT -ne 0 ]; then
     log_and_echo "$INFO" "Installing IBM Container Registry CLI"
@@ -462,6 +489,5 @@ log_and_echo "$LABEL" "Initialization complete"
 # run image cleanup if necessary
 #. $EXT_DIR/image_utilities.sh
 
-which docker
 docker build -t ${FULL_REPOSITORY_NAME} .
 
