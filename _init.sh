@@ -139,6 +139,7 @@ fi
 
 set +e
 set +x 
+env
 
 ###############################
 # Configure extension PATH    #
@@ -324,27 +325,6 @@ else
 fi 
 export LOG_DIR=$ARCHIVE_DIR
 
-#############################
-# Install Cloud Foundry CLI #
-#############################
-#CF_VER=$(cf -v)
-#log_and_echo "$INFO" "Existing Cloud Foundry CLI ${CF_VER}"
-#log_and_echo "$INFO" "Installing Cloud Foundry CLI"
-#pushd $EXT_DIR >/dev/null
-#gunzip cf-linux-amd64.tgz &> /dev/null
-#tar -xvf cf-linux-amd64.tar  &> /dev/null
-#cf help &> /dev/null
-#RESULT=$?
-#if [ $RESULT -ne 0 ]; then
-#    log_and_echo "$ERROR" "Could not install the Cloud Foundry CLI"
-#    ${EXT_DIR}/print_help.sh
-#    ${EXT_DIR}/utilities/sendMessage.sh -l bad -m "Failed to install Cloud Foundry CLI. $(get_error_info)"
-#    exit $RESULT
-#fi
-#CF_VER=$(cf -v)
-#popd >/dev/null
-#log_and_echo "$LABEL" "Successfully installed Cloud Foundry CLI ${CF_VER}"
-
 #####################################
 # Install bx cli                    #
 #####################################
@@ -365,65 +345,58 @@ if [ $RESULT -ne 0 ]; then
     fi
 fi
 
+BX_CMD=`which bx`
+
 
 #####################################
 # Install IBM Container Service CLI #
 #####################################
 # Install ICE CLI
-log_and_echo "$INFO" "Installing IBM Container Registry CLI"
-#ice help &> /dev/null
-#RESULT=$?
-#if [ $RESULT -ne 0 ]; then
-#    installwithpython3
-#    installwithpython27
-#    installwithpython277
-#    installwithpython34
-#    ice help &> /dev/null
-bx plugin install container-registry -r Bluemix
+${BX_CMD} plugin show container-registry
 RESULT=$?
 if [ $RESULT -ne 0 ]; then
-    log_and_echo "$ERROR" "Failed to install IBM Container Registry CLI"
-else
-    log_and_echo "$LABEL" "Successfully installed IBM Container Service CLI"
+    log_and_echo "$INFO" "Installing IBM Container Registry CLI"
+    #ice help &> /dev/null
+    #RESULT=$?
+    #if [ $RESULT -ne 0 ]; then
+    #    installwithpython3
+    #    installwithpython27
+    #    installwithpython277
+    #    installwithpython34
+    #    ice help &> /dev/null
+    ${BX_CMD} plugin install container-registry -r Bluemix
+    RESULT=$?
+    if [ $RESULT -ne 0 ]; then
+        log_and_echo "$ERROR" "Failed to install IBM Container Registry CLI"
+    else
+        log_and_echo "$LABEL" "Successfully installed IBM Container Service CLI"
+    fi
 fi
 
-bx target
+if [ ! -z "${BLUEMIX_API_HOST}" ]; then
+    BX_LOGIN_ARGS="${BX_LOGIN_ARGS} -a ${BLUEMIX_API_HOST}"
+fi
+
+if [ ! -z "${BLUEMIX_ORG}" ]; then
+    BX_LOGIN_ARGS="${BX_LOGIN_ARGS} -o ${BLUEMIX_ORG}"
+elif [ ! -z "${CF_ORG}" ]; then
+    BX_LOGIN_ARGS="${BX_LOGIN_ARGS} -o ${CF_ORG}"
+fi
+
+if [ ! -z "${BLUEMIX_SPACE}" ]; then
+    BX_LOGIN_ARGS="${BX_LOGIN_ARGS} -o ${BLUEMIX_SPACE}"
+elif [ ! -z "${CF_SPACE}" ]; then
+    BX_LOGIN_ARGS="${BX_LOGIN_ARGS} -o ${CF_SPACE}"
+fi
+
+
+${BX_CMD} login ${BX_LOGIN_ARGS}
+${BX_CMD} target
 
 ##########################################
 # setup bluemix env
 ##########################################
 # attempt to  target env automatically
-if [ -n "$BLUEMIX_TARGET" ]; then
-    # cf not setup yet, try manual setup
-    if [ "$BLUEMIX_TARGET" == "staging" ]; then 
-        export BLUEMIX_API_HOST="api.stage1.ng.bluemix.net"
-    elif [ "$BLUEMIX_TARGET" == "prod" ]; then 
-        export BLUEMIX_API_HOST="api.ng.bluemix.net"
-    else 
-        log_and_echo "$ERROR" "Unknown Bluemix environment specified: ${BLUEMIX_TARGET}, Defaulting to production"
-        export BLUEMIX_TARGET="prod"
-        export BLUEMIX_API_HOST="api.ng.bluemix.net"
-    fi 
-else
-    CF_API=$(${EXT_DIR}/cf api)
-    RESULT=$?
-    debugme echo "CF_API: ${CF_API}"
-    if [ $RESULT -eq 0 ]; then
-        # find the bluemix api host
-        export BLUEMIX_API_HOST=`echo $CF_API  | awk '{print $3}' | sed '0,/.*\/\//s///'`
-        echo $BLUEMIX_API_HOST | grep 'stage1'
-        if [ $? -eq 0 ]; then
-            # on staging, make sure bm target is set for staging
-            export BLUEMIX_TARGET="staging"
-        else
-            # on prod, make sure bm target is set for prod
-            export BLUEMIX_TARGET="prod"
-        fi
-    else 
-        export BLUEMIX_TARGET="prod"
-        export BLUEMIX_API_HOST="api.ng.bluemix.net"
-    fi
-fi
 log_and_echo "$INFO" "Bluemix host is '${BLUEMIX_API_HOST}'"
 log_and_echo "$INFO" "Bluemix target is '${BLUEMIX_TARGET}'"
 # strip off the hostname to get full domain
@@ -442,7 +415,7 @@ export CCS_REGISTRY_HOST="${REG_PREFIX}${CF_TARGET}"
 ################################
 # Login to Container Service   #
 ################################
-bx cr login
+${BX_CMD} cr login
 RESULT=$?
 if [ $RESULT -ne 0 ] && [ "$USE_ICE_CLI" = "1" ]; then
     exit $RESULT
@@ -489,4 +462,6 @@ log_and_echo "$LABEL" "Initialization complete"
 # run image cleanup if necessary
 #. $EXT_DIR/image_utilities.sh
 
+which docker
 docker build -t ${FULL_REPOSITORY_NAME} .
+
