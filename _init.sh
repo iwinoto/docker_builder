@@ -375,6 +375,8 @@ fi
 
 if [ ! -z "${BLUEMIX_API_HOST}" ]; then
     BX_LOGIN_ARGS="${BX_LOGIN_ARGS} -a ${BLUEMIX_API_HOST}"
+elif [ ! -z "${CF_TARGET_URL}" ]; then
+    BX_LOGIN_ARGS="${BX_LOGIN_ARGS} -a ${CF_TARGET_URL}"
 fi
 
 if [ ! -z "${BLUEMIX_ORG}" ]; then
