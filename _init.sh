@@ -356,9 +356,6 @@ fi
 #####################################
 # Install bx cli                    #
 #####################################
-echo ${EXT_DIR}
-ls ${EXT_DIR}
-
 which bx
 RESULT=$?
 
@@ -400,6 +397,29 @@ if [ $RESULT -ne 0 ]; then
         log_and_echo "$LABEL" "Successfully installed IBM Container Service CLI"
     fi
 fi
+
+${BX_CMD} plugin show IBM-Containers > /dev/null
+RESULT=$?
+if [ $RESULT -ne 0 ]; then
+    log_and_echo "$INFO" "Installing IBM-Containers plugin"
+    #ice help &> /dev/null
+    #RESULT=$?
+    #if [ $RESULT -ne 0 ]; then
+    #    installwithpython3
+    #    installwithpython27
+    #    installwithpython277
+    #    installwithpython34
+    #    ice help &> /dev/null
+    ${BX_CMD} plugin install IBM-Containers -r Bluemix
+    RESULT=$?
+    if [ $RESULT -ne 0 ]; then
+        log_and_echo "$ERROR" "Failed to install IBM Container Registry CLI"
+    else
+        log_and_echo "$LABEL" "Successfully installed IBM Container Service CLI"
+    fi
+fi
+
+
 
 if [ ! -z "${BLUEMIX_API_HOST}" ]; then
     BX_LOGIN_ARGS="${BX_LOGIN_ARGS} -a ${BLUEMIX_API_HOST}"
@@ -449,6 +469,13 @@ if [ $RESULT -ne 0 ] && [ "$USE_ICE_CLI" = "1" ]; then
     exit $RESULT
 fi
 
+${BX_CMD} ic init 
+RESULT=$?
+if [ $RESULT -ne 0 ] && [ "$USE_ICE_CLI" = "1" ]; then
+    exit $RESULT
+fi
+
+
 ############################
 # enable logging to logmet #
 ############################
@@ -489,6 +516,4 @@ log_and_echo "$LABEL" "Initialization complete"
 
 # run image cleanup if necessary
 #. $EXT_DIR/image_utilities.sh
-
-docker build -t ${FULL_REPOSITORY_NAME} .
 
