@@ -351,58 +351,43 @@ export LOG_DIR=$ARCHIVE_DIR
 echo ${EXT_DIR}
 ls ${EXT_DIR}
 
-log_and_echo "$INFO" "Installing Bluemix CLI"
-sh <(curl -fsSL https://clis.ng.bluemix.net/install/linux)
+which bx
 RESULT=$?
+
 if [ $RESULT -ne 0 ]; then
-    log_and_echo "$ERROR" "Failed to install Bluemix CLI"
-else
-    log_and_echo "$LABEL" "Successfully installed Bluemix CLI"
+    log_and_echo "$INFO" "Installing Bluemix CLI"
+    sh <(curl -fsSL https://clis.ng.bluemix.net/install/linux)
+    RESULT=$?
+    if [ $RESULT -ne 0 ]; then
+        log_and_echo "$ERROR" "Failed to install Bluemix CLI"
+    else
+        log_and_echo "$LABEL" "Successfully installed Bluemix CLI"
+    fi
 fi
 
-which bx
 
 #####################################
 # Install IBM Container Service CLI #
 #####################################
 # Install ICE CLI
-log_and_echo "$INFO" "Installing IBM Container Service CLI"
-ice help &> /dev/null
-RESULT=$?
-if [ $RESULT -ne 0 ]; then
+log_and_echo "$INFO" "Installing IBM Container Registry CLI"
+#ice help &> /dev/null
+#RESULT=$?
+#if [ $RESULT -ne 0 ]; then
 #    installwithpython3
 #    installwithpython27
 #    installwithpython277
 #    installwithpython34
 #    ice help &> /dev/null
-    bx plugin install container-service -r Bluemix
-    RESULT=$?
-    if [ $RESULT -ne 0 ]; then
-        log_and_echo "$ERROR" "Failed to install IBM Container Service CLI"
-        debugme python --version
-        if [ "$USE_ICE_CLI" = "1" ]; then
-            ${EXT_DIR}/print_help.sh
-            ${EXT_DIR}/utilities/sendMessage.sh -l bad -m "Failed to install IBM Container Service CLI. $(get_error_info)"
-            exit $RESULT
-        fi
-    else
-        log_and_echo "$LABEL" "Successfully installed IBM Container Service CLI"
-    fi
-fi 
-
-#############################################
-# Install the IBM Containers plug-in (cf ic) #
-#############################################
-if [ "$USE_ICE_CLI" != "1" ]; then
-    export IC_COMMAND="${EXT_DIR}/cf ic"
-    install_cf_ic
-    RESULT=$?
-    if [ $RESULT -ne 0 ]; then
-        exit $RESULT
-    fi 
+bx plugin install container-registry -r Bluemix
+RESULT=$?
+if [ $RESULT -ne 0 ]; then
+    log_and_echo "$ERROR" "Failed to install IBM Container Registry CLI"
 else
-    export IC_COMMAND="ice"
+    log_and_echo "$LABEL" "Successfully installed IBM Container Service CLI"
 fi
+
+bx target
 
 ##########################################
 # setup bluemix env
@@ -453,16 +438,11 @@ fi
 export CCS_API_HOST="${API_PREFIX}${CF_TARGET}"
 # build registry server hostname
 export CCS_REGISTRY_HOST="${REG_PREFIX}${CF_TARGET}"
-# set up the ice cfg
-sed -i "s/ccs_host =.*/ccs_host = $CCS_API_HOST/g" $EXT_DIR/ice-cfg.ini
-sed -i "s/reg_host =.*/reg_host = $CCS_REGISTRY_HOST/g" $EXT_DIR/ice-cfg.ini
-sed -i "s/cf_api_url =.*/cf_api_url = $BLUEMIX_API_HOST/g" $EXT_DIR/ice-cfg.ini
-export ICE_CFG="ice-cfg.ini"
 
 ################################
 # Login to Container Service   #
 ################################
-login_to_container_service
+bx cr login
 RESULT=$?
 if [ $RESULT -ne 0 ] && [ "$USE_ICE_CLI" = "1" ]; then
     exit $RESULT
@@ -507,4 +487,6 @@ fi
 log_and_echo "$LABEL" "Initialization complete"
 
 # run image cleanup if necessary
-. $EXT_DIR/image_utilities.sh
+#. $EXT_DIR/image_utilities.sh
+
+docker build -t ${FULL_REPOSITORY_NAME} .
