@@ -399,8 +399,6 @@ ${BX_CMD} target
 # setup bluemix env
 ##########################################
 # attempt to  target env automatically
-log_and_echo "$INFO" "Bluemix host is '${BLUEMIX_API_HOST}'"
-log_and_echo "$INFO" "Bluemix target is '${BLUEMIX_TARGET}'"
 # strip off the hostname to get full domain
 CF_TARGET=`echo $BLUEMIX_API_HOST | sed 's/[^\.]*//'`
 if [ -z "$API_PREFIX" ]; then
@@ -426,22 +424,22 @@ fi
 ############################
 # enable logging to logmet #
 ############################
-setup_met_logging "${BLUEMIX_USER}" "${BLUEMIX_PASSWORD}"
-RESULT=$?
-if [ $RESULT -ne 0 ]; then
-    log_and_echo "$WARN" "LOGMET setup failed with return code ${RESULT}"
-fi
+#setup_met_logging "${BLUEMIX_USER}" "${BLUEMIX_PASSWORD}"
+#RESULT=$?
+#if [ $RESULT -ne 0 ]; then
+#    log_and_echo "$WARN" "LOGMET setup failed with return code ${RESULT}"
+#fi
 
 ################################
 # Get the namespace            #
 ################################
 get_name_space
-RESULT=$?
-if [ $RESULT -ne 0 ]; then
-    exit $RESULT
-fi 
+#RESULT=$?
+#if [ $RESULT -ne 0 ]; then
+#    exit $RESULT
+#fi 
 
-log_and_echo "$LABEL" "Users namespace is $NAMESPACE"
+#log_and_echo "$LABEL" "Users namespace is $NAMESPACE"
 export REGISTRY_URL=${CCS_REGISTRY_HOST}/${NAMESPACE}
 export FULL_REPOSITORY_NAME=${REGISTRY_URL}/${IMAGE_NAME}:${APPLICATION_VERSION}
 log_and_echo "$LABEL" "The desired image repository name will be ${FULL_REPOSITORY_NAME}"
