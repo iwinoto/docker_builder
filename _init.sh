@@ -386,9 +386,9 @@ elif [ ! -z "${CF_ORG}" ]; then
 fi
 
 if [ ! -z "${BLUEMIX_SPACE}" ]; then
-    BX_LOGIN_ARGS="${BX_LOGIN_ARGS} -o ${BLUEMIX_SPACE}"
+    BX_LOGIN_ARGS="${BX_LOGIN_ARGS} -s ${BLUEMIX_SPACE}"
 elif [ ! -z "${CF_SPACE}" ]; then
-    BX_LOGIN_ARGS="${BX_LOGIN_ARGS} -o ${CF_SPACE}"
+    BX_LOGIN_ARGS="${BX_LOGIN_ARGS} -s ${CF_SPACE}"
 fi
 
 
