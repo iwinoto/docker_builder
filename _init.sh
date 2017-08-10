@@ -41,95 +41,6 @@ debugme() {
   [[ $DEBUG = 1 ]] && "$@" || :
 }
 export -f debugme 
-installwithpython27() {
-    echo "Installing Python 2.7"
-    sudo apt-get update &> /dev/null
-    sudo apt-get -y install python2.7 &> /dev/null
-    python --version 
-    wget --no-check-certificate https://bootstrap.pypa.io/get-pip.py &> /dev/null
-    python get-pip.py --user &> /dev/null
-    export PATH=$PATH:~/.local/bin
-    if [ -f icecli-3.0.zip ]; then 
-        debugme echo "there was an existing icecli.zip"
-        debugme ls -la 
-        rm -f icecli-3.0.zip
-    fi 
-    wget https://static-ice.ng.bluemix.net/icecli-3.0.zip &> /dev/null
-    pip install --user icecli-3.0.zip > cli_install.log 2>&1 
-    debugme cat cli_install.log 
-}
-installwithpython34() {
-    curl -kL http://xrl.us/pythonbrewinstall | bash
-    source $HOME/.pythonbrew/etc/bashrc
-    sudo apt-get install zlib1g-dev libexpat1-dev libdb4.8-dev libncurses5-dev libreadline6-dev
-    sudo apt-get update &> /dev/null
-    debugme pythonbrew list -k
-    echo "Installing Python 3.4.1"
-    pythonbrew install 3.4.1 &> /dev/null
-    debugme cat /home/jenkins/.pythonbrew/log/build.log 
-    pythonbrew switch 3.4.1
-    python --version 
-    echo "Installing pip"
-    wget --no-check-certificate https://bootstrap.pypa.io/get-pip.py &> /dev/null
-    python get-pip.py --user
-    export PATH=$PATH:~/.local/bin
-    which pip 
-    echo "Installing ice cli"
-    wget https://static-ice.ng.bluemix.net/icecli-3.0.zip &> /dev/null
-    wget https://static-ice.ng.bluemix.net/icecli-3.0.zip
-    pip install --user icecli-3.0.zip > cli_install.log 2>&1 
-    debugme cat cli_install.log 
-}
-
-installwithpython277() {
-    pushd . 
-    cd $EXT_DIR
-    echo "Installing Python 2.7.7"
-    curl -kL http://xrl.us/pythonbrewinstall | bash
-    source $HOME/.pythonbrew/etc/bashrc
-
-    sudo apt-get update &> /dev/null
-    sudo apt-get build-dep python2.7
-    sudo apt-get install zlib1g-dev
-    debugme pythonbrew list -k
-    echo "Installing Python 2.7.7"
-    pythonbrew install 2.7.7 --no-setuptools &> /dev/null
-    debugme cat /home/jenkins/.pythonbrew/log/build.log 
-    pythonbrew switch 2.7.7
-    python --version 
-    echo "Installing pip"
-    wget --no-check-certificate https://bootstrap.pypa.io/get-pip.py &> /dev/null
-    python get-pip.py --user &> /dev/null
-    debugme pwd 
-    debugme ls 
-    popd 
-    pip remove requests
-    pip install --user -U requests 
-    pip install --user -U pip
-    export PATH=$PATH:~/.local/bin
-    which pip 
-    echo "Installing ice cli"
-    wget https://static-ice.ng.bluemix.net/icecli-3.0.zip &> /dev/null
-    pip install --user icecli-3.0.zip > cli_install.log 2>&1 
-    debugme cat cli_install.log 
-}
-installwithpython3() {
-
-    sudo apt-get update &> /dev/null
-    sudo apt-get upgrade &> /dev/null 
-    sudo apt-get -y install python3 &> /dev/null
-    python3 --version 
-    echo "installing pip"
-    wget --no-check-certificate https://bootstrap.pypa.io/get-pip.py 
-    python3 get-pip.py --user &> /dev/null
-    export PATH=$PATH:~/.local/bin
-    which pip 
-    echo "installing ice cli"
-
-    wget https://static-ice.ng.bluemix.net/icecli-3.0.zip
-    pip install --user icecli-3.0.zip > cli_install.log 2>&1 
-    debugme cat cli_install.log 
-}
 
 if [[ $DEBUG = 1 ]]; then 
     export ICE_ARGS="--verbose"
@@ -381,14 +292,6 @@ ${BX_CMD} plugin show container-registry > /dev/null
 RESULT=$?
 if [ $RESULT -ne 0 ]; then
     log_and_echo "$INFO" "Installing IBM Container Registry CLI"
-    #ice help &> /dev/null
-    #RESULT=$?
-    #if [ $RESULT -ne 0 ]; then
-    #    installwithpython3
-    #    installwithpython27
-    #    installwithpython277
-    #    installwithpython34
-    #    ice help &> /dev/null
     ${BX_CMD} plugin install container-registry -r Bluemix
     RESULT=$?
     if [ $RESULT -ne 0 ]; then
@@ -402,14 +305,6 @@ ${BX_CMD} plugin show IBM-Containers > /dev/null
 RESULT=$?
 if [ $RESULT -ne 0 ]; then
     log_and_echo "$INFO" "Installing IBM-Containers plugin"
-    #ice help &> /dev/null
-    #RESULT=$?
-    #if [ $RESULT -ne 0 ]; then
-    #    installwithpython3
-    #    installwithpython27
-    #    installwithpython277
-    #    installwithpython34
-    #    ice help &> /dev/null
     ${BX_CMD} plugin install IBM-Containers -r Bluemix
     RESULT=$?
     if [ $RESULT -ne 0 ]; then
@@ -418,8 +313,6 @@ if [ $RESULT -ne 0 ]; then
         log_and_echo "$LABEL" "Successfully installed IBM Container Service CLI"
     fi
 fi
-
-
 
 if [ ! -z "${BLUEMIX_API_HOST}" ]; then
     BX_LOGIN_ARGS="${BX_LOGIN_ARGS} -a ${BLUEMIX_API_HOST}"
@@ -517,3 +410,8 @@ log_and_echo "$LABEL" "Initialization complete"
 # run image cleanup if necessary
 #. $EXT_DIR/image_utilities.sh
 
+export DOCKER_HOST=tcp://containers-api.ng.bluemix.net:8443
+export DOCKER_CERT_PATH=${HOME}/.ice/certs/containers-api.ng.bluemix.net/${CF_SPACE_ID}
+export DOCKER_TLS_VERIFY=1
+
+docker info
