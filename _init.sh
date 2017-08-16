@@ -35,28 +35,28 @@ DEF_REG_PREFIX="registry"
 export MODULE_NAME="docker-builder"
 
 ##################################################
-# Simple function to only run command if DEBUG=1 # 
+# Simple function to only run command if DEBUG=1 #
 ### ###############################################
 debugme() {
   [[ $DEBUG = 1 ]] && "$@" || :
 }
-export -f debugme 
+export -f debugme
 
-if [[ $DEBUG = 1 ]]; then 
+if [[ $DEBUG = 1 ]]; then
     export ICE_ARGS="--verbose"
 else
     export ICE_ARGS=""
-fi 
+fi
 
 set +e
-set +x 
+set +x
 
 ###############################
 # Configure extension PATH    #
 ###############################
-if [ -n $EXT_DIR ]; then 
+if [ -n $EXT_DIR ]; then
     export PATH=$EXT_DIR:$PATH
-fi 
+fi
 
 #########################################
 # Configure log file to store errors  #
@@ -75,7 +75,7 @@ source ${EXT_DIR}/git_util.sh
 # get the extensions utilities #
 ################################
 pushd . >/dev/null
-cd $EXT_DIR 
+cd $EXT_DIR
 if [ -n "${OVERRIDE_UTILITIES_BRANCH}" ]; then
     git_retry clone https://github.com/Osthanes/utilities.git -b "${OVERRIDE_UTILITIES_BRANCH}" utilities
 else
@@ -92,10 +92,10 @@ source ${EXT_DIR}/utilities/logging_utils.sh
 ########################################################################
 # Fix timestamps so that caching will be leveraged on the remove host  #
 ########################################################################
-if [ -z "${USE_CACHED_LAYERS}" ]; then 
+if [ -z "${USE_CACHED_LAYERS}" ]; then
     export USE_CACHED_LAYERS="true"
-fi 
-if [ "${USE_CACHED_LAYERS}" == "true" ] && [ -d .git ]; then 
+fi
+if [ "${USE_CACHED_LAYERS}" == "true" ] && [ -d .git ]; then
     if [ "${MAX_CACHING_TIME}x" == "x" ]; then
         MAX_CACHING_TIME=300
     fi
@@ -111,7 +111,7 @@ if [ "${USE_CACHED_LAYERS}" == "true" ] && [ -d .git ]; then
     }
 
     old_ifs=$IFS
-    IFS=$'\n' 
+    IFS=$'\n'
     FILE_COUNTER=0
     all_file_count=`git ls-files | wc | awk '{print $1}'`
     eta_total=0
@@ -134,7 +134,7 @@ if [ "${USE_CACHED_LAYERS}" == "true" ] && [ -d .git ]; then
                     log_and_echo "$DEBUGGING" "Would take too much time to adjust timestamps, skipping"
                     eta_total=-1
                     break;
-                fi 
+                fi
             fi
             echo -n "."
         fi
@@ -153,29 +153,29 @@ if [ "${USE_CACHED_LAYERS}" == "true" ] && [ -d .git ]; then
         fi
     fi
     log_and_echo "$INFO" "Timestamps adjusted"
-fi 
+fi
 
 ################################
 # Application Name and Version #
 ################################
-# The build number for the builder is used for the version in the image tag 
+# The build number for the builder is used for the version in the image tag
 # For deployers this information is stored in the $BUILD_SELECTOR variable and can be pulled out
 if [ -z "$APPLICATION_VERSION" ]; then
     export SELECTED_BUILD=$(grep -Eo '[0-9]{1,100}' <<< "${BUILD_SELECTOR}")
     if [ -z $SELECTED_BUILD ]
-    then 
+    then
         if [ -z $BUILD_NUMBER ]
-        then 
+        then
             export APPLICATION_VERSION=$(date +%s)
-        else 
-            export APPLICATION_VERSION=$BUILD_NUMBER    
+        else
+            export APPLICATION_VERSION=$BUILD_NUMBER
         fi
     else
         export APPLICATION_VERSION=$SELECTED_BUILD
-    fi 
-fi 
+    fi
+fi
 
-if [ -n "$BUILD_OFFSET" ]; then 
+if [ -n "$BUILD_OFFSET" ]; then
     log_and_echo "$INFO" "Using BUILD_OFFSET of $BUILD_OFFSET"
     export APPLICATION_VERSION=$((APPLICATION_VERSION + BUILD_OFFSET))
     export BUILD_NUMBER=$((BUILD_NUMBER + BUILD_OFFSET))
@@ -183,39 +183,39 @@ fi
 
 log_and_echo "$INFO" "APPLICATION_VERSION: $APPLICATION_VERSION"
 
-if [ -z $IMAGE_NAME ]; then 
+if [ -z $IMAGE_NAME ]; then
     log_and_echo "$ERROR" "Please set IMAGE_NAME in the environment to desired name"
     export IMAGE_NAME="defaultimagename"
-fi 
+fi
 
 if [ -f ${EXT_DIR}/builder_utilities.sh ]; then
-    source ${EXT_DIR}/builder_utilities.sh 
+    source ${EXT_DIR}/builder_utilities.sh
     log_and_echo "$DEBUGGING" "Validating image name"
-    pipeline_validate_full ${IMAGE_NAME} >validate.log 2>&1 
+    pipeline_validate_full ${IMAGE_NAME} >validate.log 2>&1
     VALID_NAME=$?
-    if [ ${VALID_NAME} -ne 0 ]; then     
+    if [ ${VALID_NAME} -ne 0 ]; then
         log_and_echo "$ERROR" "${IMAGE_NAME} is not a valid image name for Docker"
-        cat validate.log 
+        cat validate.log
         ${EXT_DIR}/print_help.sh
         ${EXT_DIR}/utilities/sendMessage.sh -l bad -m "Invalid image name. $(get_error_info)"
         exit ${VALID_NAME}
-    else 
-        debugme cat validate.log 
-    fi 
-else 
+    else
+        debugme cat validate.log
+    fi
+else
     log_and_echo "$ERROR" "Warning could not find utilities in ${EXT_DIR}"
     ${EXT_DIR}/utilities/sendMessage.sh -l bad -m "Failed to get builder_utilities.sh. $(get_error_info)"
-fi 
+fi
 
 ################################
 # Setup archive information    #
 ################################
-if [ -z $WORKSPACE ]; then 
+if [ -z $WORKSPACE ]; then
     log_and_echo "$ERROR" "Please set WORKSPACE in the environment"
     ${EXT_DIR}/print_help.sh
     ${EXT_DIR}/utilities/sendMessage.sh -l bad -m "Failed to discover namespace. $(get_error_info)"
     exit 1
-fi 
+fi
 
 if [ -z $ARCHIVE_DIR ]; then
     log_and_echo "$LABEL" "ARCHIVE_DIR was not set, setting to WORKSPACE ${WORKSPACE}"
@@ -229,10 +229,10 @@ fi
 
 if [ -d $ARCHIVE_DIR ]; then
   log_and_echo "$INFO" "Archiving to $ARCHIVE_DIR"
-else 
+else
   log_and_echo "$INFO" "Creating archive directory $ARCHIVE_DIR"
-  mkdir $ARCHIVE_DIR 
-fi 
+  mkdir $ARCHIVE_DIR
+fi
 export LOG_DIR=$ARCHIVE_DIR
 
 #####################################
@@ -349,11 +349,12 @@ if [ -z "$REG_PREFIX" ]; then
     REG_PREFIX=$DEF_REG_PREFIX
 fi
 # build api server hostname
-export CCS_API_HOST="${API_PREFIX}${CF_TARGET}"
+#export CCS_API_HOST="${API_PREFIX}${CF_TARGET}"
+export CCS_API_HOST="${API_PREFIX}.ng.bluemix.net"
 # build registry server hostname
 export CCS_REGISTRY_HOST="${REG_PREFIX}${CF_TARGET}"
 
-${BX_CMD} ic init 
+${BX_CMD} ic init
 RESULT=$?
 if [ $RESULT -ne 0 ] && [ "$USE_ICE_CLI" = "1" ]; then
     exit $RESULT
@@ -376,7 +377,7 @@ get_name_space
 #RESULT=$?
 #if [ $RESULT -ne 0 ]; then
 #    exit $RESULT
-#fi 
+#fi
 
 #log_and_echo "$LABEL" "Users namespace is $NAMESPACE"
 export REGISTRY_URL=${CCS_REGISTRY_HOST}/${NAMESPACE}
@@ -384,17 +385,17 @@ export FULL_REPOSITORY_NAME=${REGISTRY_URL}/${IMAGE_NAME}:${APPLICATION_VERSION}
 log_and_echo "$LABEL" "The desired image repository name will be ${FULL_REPOSITORY_NAME}"
 
 log_and_echo "$DEBUGGING" "Validating full repository name"
-pipeline_validate_full  ${FULL_REPOSITORY_NAME} >validate.log 2>&1 
+pipeline_validate_full  ${FULL_REPOSITORY_NAME} >validate.log 2>&1
 VALID_NAME=$?
-if [ ${VALID_NAME} -ne 0 ]; then    
+if [ ${VALID_NAME} -ne 0 ]; then
     log_and_echo "$ERROR" " ${FULL_REPOSITORY_NAME} is not a valid repository name"
-    log_and_echo `cat validate.log` 
+    log_and_echo `cat validate.log`
     ${EXT_DIR}/print_help.sh
     ${EXT_DIR}/utilities/sendMessage.sh -l bad -m "Invalid repository name. $(get_error_info)"
     exit ${VALID_NAME}
-else 
-    debugme cat validate.log 
-fi 
+else
+    debugme cat validate.log
+fi
 
 log_and_echo "$LABEL" "Initialization complete"
 
